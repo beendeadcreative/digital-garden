@@ -7,6 +7,8 @@ const { title, description = 'A digital garden of half-formed ideas, growing in 
 const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 const notes = await allNotes();
 const slugs = notes.map((n) => n.id);
+const repo = process.env.GITHUB_REPOSITORY || 'beendeadcreative/digital-garden';
+const branch = process.env.GARDEN_BRANCH || 'main';
 const pageTitle = title ? `${title} · Garden` : 'Garden';
 ---
 <!doctype html>
@@ -21,18 +23,48 @@ const pageTitle = title ? `${title} · Garden` : 'Garden';
     <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
     <title>{pageTitle}</title>
   </head>
-  <body>
+  <body data-repo={repo} data-branch={branch} data-base={base}>
     <div class="wrap">
       <header class="site-header">
         <a class="brand" href={`${base}/`}>🌱 Garden</a>
         <nav class="nav">
           <a href={`${base}/notes/`}>All notes</a>
+          <a href={`${base}/write/`}>✏️ Write</a>
           <button id="random" type="button" data-slugs={JSON.stringify(slugs)} data-base={base}>Surprise me</button>
+          <button id="settings" type="button" aria-label="Editing settings" title="Editing settings">⚙</button>
         </nav>
       </header>
       <main><slot /></main>
       <footer>Growing slowly, in public. Last built {new Date().toISOString().slice(0, 10)}.</footer>
     </div>
+    <dialog id="token-dialog">
+      <form method="dialog">
+        <h2>Let this page edit your garden</h2>
+        <p>Notes are saved by committing to your GitHub repo. Create a token once and paste it here. It stays in this browser only.</p>
+        <ol>
+          <li>Open <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub → New fine-grained token</a>.</li>
+          <li>Under <b>Repository access</b>, choose <b>Only select repositories</b> and pick <code>{repo}</code>.</li>
+          <li>Under <b>Permissions → Repository</b>, set <b>Contents</b> to <b>Read and write</b>.</li>
+          <li>Set the expiry to what you like, generate, and paste the token below.</li>
+        </ol>
+        <input type="password" name="token" placeholder="github_pat_…" autocomplete="off" />
+        <div class="row actions">
+          <button value="save" class="primary" id="token-save">Save token</button>
+          <button value="cancel" formnovalidate>Cancel</button>
+          <button value="forget" id="token-forget" formnovalidate class="danger">Forget token</button>
+        </div>
+      </form>
+    </dialog>
+    <script>
+      import { setToken, clearToken, askForToken } from '../lib/editor-client';
+      const dlg = document.getElementById('token-dialog') as HTMLDialogElement;
+      dlg.addEventListener('close', () => {
+        const v = (dlg.querySelector('input') as HTMLInputElement).value;
+        if (dlg.returnValue === 'save' && v.trim()) setToken(v);
+        if (dlg.returnValue === 'forget') clearToken();
+      });
+      document.getElementById('settings')?.addEventListener('click', () => askForToken());
+    </script>
     <script>
       const btn = document.getElementById('random');
       btn?.addEventListener('click', () => {

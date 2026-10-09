@@ -137,3 +137,40 @@ footer { margin: 64px 0 40px; color: var(--ink-soft); font-size: .85rem; text-al
 @media (max-width: 520px) {
   .heat i { width: 10px; height: 10px; }
 }
+
+/* editing */
+.editor { display: grid; gap: 14px; margin: 8px 0 28px; }
+.editor h1 { margin: 0; font-size: 2rem; }
+.editor label { display: grid; gap: 4px; font-size: .85rem; font-weight: 600; color: var(--ink-soft); }
+.editor label.inline { display: flex; align-items: center; gap: 8px; }
+.editor .row { display: flex; gap: 12px; flex-wrap: wrap; }
+.editor .row > label { flex: 1 1 180px; }
+input, select, textarea {
+  font: inherit; font-weight: 400; color: var(--ink); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; width: 100%;
+}
+.editor label.inline select { width: auto; }
+textarea { resize: vertical; line-height: 1.55; }
+input:focus, select:focus, textarea:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+button.primary, .btn, button.danger, dialog button {
+  font: inherit; font-weight: 600; cursor: pointer; border-radius: 999px; padding: 8px 18px;
+  border: 1px solid var(--line); background: var(--card); color: var(--ink); text-decoration: none; display: inline-block;
+}
+button.primary { background: var(--evergreen); border-color: var(--evergreen); color: #fff; }
+button.primary:disabled { opacity: .5; cursor: wait; }
+button.danger { color: #b3382c; }
+.btn:hover, button.danger:hover { border-color: var(--accent); }
+.actions { align-items: center !important; }
+.msg { margin: 0; font-size: .9rem; color: var(--ink-soft); }
+.msg.ok { color: var(--evergreen); font-weight: 600; }
+.msg.err { color: #b3382c; font-weight: 600; }
+.quick textarea { background: var(--card); }
+.sr { position: absolute; left: -9999px; }
+dialog { background: var(--card); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); max-width: 520px; width: calc(100% - 32px); padding: 22px; }
+dialog::backdrop { background: rgba(0,0,0,.45); }
+dialog h2 { margin-top: 0; }
+dialog ol { padding-left: 20px; font-size: .92rem; }
+dialog input { margin: 8px 0 14px; }
+[hidden] { display: none !important; }
+.editor .row { align-items: start; }
+.editor .row.actions, .editor .row.tools { align-items: center; }

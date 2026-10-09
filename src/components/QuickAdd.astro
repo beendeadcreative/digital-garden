@@ -1,0 +1,48 @@
+<form id="quick" class="card editor quick" autocomplete="off">
+  <label class="sr">Quick note
+    <textarea name="text" rows="2" placeholder="What's on your mind today? First line becomes the title."></textarea>
+  </label>
+  <div class="row actions">
+    <button class="primary" type="submit">🌱 Plant it</button>
+    <a href="#" id="quick-more" class="btn">Open full editor</a>
+    <span id="quick-msg" class="msg" role="status"></span>
+  </div>
+</form>
+<script>
+  import { saveNote, today, gardenConfig, getToken, askForToken, GardenError } from '../lib/editor-client';
+  const form = document.getElementById('quick') as HTMLFormElement;
+  const msg = document.getElementById('quick-msg')!;
+  const more = document.getElementById('quick-more') as HTMLAnchorElement;
+  const ta = form.elements.namedItem('text') as HTMLTextAreaElement;
+  const { base } = gardenConfig();
+  more.href = `${base}/write/`;
+
+  const planted = new URLSearchParams(location.search).get('planted');
+  if (planted) {
+    msg.textContent = 'Planted! It will show up here once the site rebuilds (about a minute).';
+    msg.className = 'msg ok';
+    history.replaceState(null, '', location.pathname);
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const raw = ta.value.trim();
+    if (!raw) return;
+    if (!getToken() && !(await askForToken())) return;
+    const [first, ...rest] = raw.split('\n');
+    const title = first.replace(/^#+\s*/, '').slice(0, 80);
+    const body = rest.join('\n').trim() || (first.length > 80 ? first : '');
+    msg.textContent = 'Planting…';
+    msg.className = 'msg';
+    try {
+      await saveNote({ meta: { title, status: 'seedling', created: today(), tags: [] }, body });
+      ta.value = '';
+      msg.textContent = 'Planted! It shows up after the site rebuilds (about a minute).';
+      msg.className = 'msg ok';
+    } catch (err) {
+      msg.textContent = (err as Error).message;
+      msg.className = 'msg err';
+      if (err instanceof GardenError && err.status === 401) askForToken();
+    }
+  });
+</script>

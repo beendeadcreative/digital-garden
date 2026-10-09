@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import NoteCard from '../components/NoteCard.astro';
+import QuickAdd from '../components/QuickAdd.astro';
 import Heatmap from '../components/Heatmap.astro';
 import { allNotes, activity, streak, orphans, STATUS } from '../lib/garden';
 
@@ -16,6 +17,8 @@ const lonely = orphans(notes).slice(0, 3);
     <h1>A garden of <em>unfinished</em> thoughts.</h1>
     <p>Not a blog. Notes here are planted rough and tended over time, so expect seedlings. Plant something small today.</p>
   </section>
+
+  <QuickAdd />
 
   <div class="stats">
     <div class="card stat"><b>{notes.length}</b><span>notes</span></div>

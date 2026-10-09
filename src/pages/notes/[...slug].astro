@@ -23,6 +23,7 @@ const iso = (d: Date) => d.toISOString().slice(0, 10);
       {note.data.tags.map((t) => <span class="tag"> {t}</span>)}
     </p>
     <div class="prose"><Content /></div>
+    <p><a class="btn" href={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/write/?note=${note.id}`}>✏️ Tend this note</a></p>
   </article>
   {backlinks.length > 0 && (
     <section class="backlinks">

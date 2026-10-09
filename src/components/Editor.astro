@@ -1,0 +1,129 @@
+---
+import { allNotes } from '../lib/garden';
+const notes = await allNotes();
+const options = notes.map((n) => ({ slug: n.id, title: n.data.title }));
+---
+<form id="editor" class="card editor" data-notes={JSON.stringify(options)} autocomplete="off">
+  <h1 id="editor-heading">Plant a note</h1>
+  <label>Title<input name="title" required placeholder="What's this about?" /></label>
+  <div class="row">
+    <label>Stage
+      <select name="status">
+        <option value="seedling">🌱 Seedling</option>
+        <option value="budding">🌿 Budding</option>
+        <option value="evergreen">🌳 Evergreen</option>
+      </select>
+    </label>
+    <label>Tags <input name="tags" placeholder="ideas, reading" /></label>
+  </div>
+  <label>Note
+    <textarea name="body" rows="12" placeholder="Write rough. Link other notes with [[double brackets]]."></textarea>
+  </label>
+  <div class="row tools">
+    <label class="inline">Link a note
+      <select id="link-picker"><option value="">Choose…</option></select>
+    </label>
+  </div>
+  <p id="editor-msg" class="msg" role="status"></p>
+  <div class="row actions">
+    <button class="primary" type="submit">Save to garden</button>
+    <a id="cancel" class="btn" href="#">Cancel</a>
+    <button id="delete" class="danger" type="button" hidden>Pull up</button>
+  </div>
+</form>
+
+<script>
+  import { loadNote, saveNote, deleteNote, today, gardenConfig, GardenError, getToken, askForToken, type NoteMeta } from '../lib/editor-client';
+
+  const form = document.getElementById('editor') as HTMLFormElement;
+  const msg = document.getElementById('editor-msg')!;
+  const heading = document.getElementById('editor-heading')!;
+  const del = document.getElementById('delete') as HTMLButtonElement;
+  const cancel = document.getElementById('cancel') as HTMLAnchorElement;
+  const picker = document.getElementById('link-picker') as HTMLSelectElement;
+  const { base } = gardenConfig();
+  const f = form.elements as any;
+
+  const say = (text: string, kind: 'ok' | 'err' | '' = '') => {
+    msg.textContent = text;
+    msg.className = `msg ${kind}`;
+  };
+
+  for (const n of JSON.parse(form.dataset.notes || '[]')) {
+    const o = document.createElement('option');
+    o.value = n.slug; o.textContent = n.title;
+    picker.append(o);
+  }
+  picker.addEventListener('change', () => {
+    if (!picker.value) return;
+    const ta = f.body as HTMLTextAreaElement;
+    const s = ta.selectionStart ?? ta.value.length;
+    const text = `[[${picker.value}]]`;
+    ta.setRangeText(text, s, ta.selectionEnd ?? s, 'end');
+    ta.focus();
+    picker.value = '';
+  });
+
+  const slug = new URLSearchParams(location.search).get('note') || undefined;
+  let sha: string | undefined;
+  let created = today();
+  cancel.href = slug ? `${base}/notes/${slug}/` : `${base}/`;
+
+  async function init() {
+    if (!getToken() && !(await askForToken())) {
+      say('Add a GitHub token (⚙ in the corner) to save notes.', 'err');
+    }
+    if (!slug) return;
+    heading.textContent = 'Tend this note';
+    say('Loading…');
+    try {
+      const note = await loadNote(slug);
+      sha = note.sha;
+      created = note.meta.created;
+      f.title.value = note.meta.title;
+      f.status.value = note.meta.status;
+      f.tags.value = note.meta.tags.join(', ');
+      f.body.value = note.body;
+      del.hidden = false;
+      say('');
+    } catch (e) {
+      say((e as Error).message, 'err');
+    }
+  }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    if (!getToken() && !(await askForToken())) return;
+    const meta: NoteMeta = {
+      title: f.title.value.trim(),
+      status: f.status.value,
+      created,
+      updated: today(),
+      tags: f.tags.value.split(',').map((t: string) => t.trim().replace(/^#/, '')).filter(Boolean),
+    };
+    say('Saving…');
+    (form.querySelector('.primary') as HTMLButtonElement).disabled = true;
+    try {
+      const saved = await saveNote({ slug, sha, meta, body: f.body.value });
+      say('Saved! The site rebuilds in about a minute, then your note appears.', 'ok');
+      setTimeout(() => (location.href = `${base}/?planted=${saved}`), 1200);
+    } catch (e) {
+      say((e as Error).message, 'err');
+      (form.querySelector('.primary') as HTMLButtonElement).disabled = false;
+      if (e instanceof GardenError && e.status === 401) askForToken();
+    }
+  });
+
+  del.addEventListener('click', async () => {
+    if (!slug || !sha || !confirm('Pull up this note for good? (It stays in git history.)')) return;
+    try {
+      await deleteNote(slug, sha, f.title.value);
+      say('Pulled up. The site rebuilds in about a minute.', 'ok');
+      setTimeout(() => (location.href = `${base}/`), 1200);
+    } catch (e) {
+      say((e as Error).message, 'err');
+    }
+  });
+
+  init();
+</script>
