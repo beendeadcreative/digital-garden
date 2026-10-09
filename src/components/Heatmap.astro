@@ -1,0 +1,22 @@
+---
+import { dayKey } from '../lib/garden';
+interface Props { activity: Map<string, number>; weeks?: number }
+const { activity, weeks = 26 } = Astro.props;
+
+// Build a grid ending today, starting on a Sunday.
+const end = new Date();
+end.setUTCHours(0, 0, 0, 0);
+const start = new Date(end);
+start.setUTCDate(start.getUTCDate() - (weeks * 7 - 1) - end.getUTCDay());
+const cells: { key: string; n: number; future: boolean }[] = [];
+for (const d = new Date(start); d <= end || cells.length % 7 !== 0; d.setUTCDate(d.getUTCDate() + 1)) {
+  const key = dayKey(d);
+  cells.push({ key, n: activity.get(key) ?? 0, future: d > end });
+}
+const level = (n: number) => (n === 0 ? 0 : n === 1 ? 1 : n === 2 ? 2 : n <= 4 ? 3 : 4);
+---
+<div class="heat" role="img" aria-label="Activity over the last six months">
+  {cells.map((c) => (
+    <i class={c.future ? '' : `l${level(c.n)}`} style={c.future ? 'visibility:hidden' : ''} title={`${c.key}: ${c.n} ${c.n === 1 ? 'note' : 'notes'}`}></i>
+  ))}
+</div>

@@ -1,0 +1,33 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import NoteCard from '../../components/NoteCard.astro';
+import { allNotes, backlinksFor, STATUS, lastTended } from '../../lib/garden';
+
+export async function getStaticPaths() {
+  const notes = await allNotes();
+  return notes.map((note) => ({ params: { slug: note.id }, props: { note, notes } }));
+}
+const { note, notes } = Astro.props;
+const { Content } = await render(note);
+const s = STATUS[note.data.status];
+const backlinks = backlinksFor(note.id, notes);
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+---
+<Base title={note.data.title}>
+  <article class="note">
+    <span class={`badge ${note.data.status}`}>{s.emoji} {s.label}</span>
+    <h1>{note.data.title}</h1>
+    <p class="meta">
+      planted {iso(note.data.created)} · tended {iso(lastTended(note))}
+      {note.data.tags.map((t) => <span class="tag"> {t}</span>)}
+    </p>
+    <div class="prose"><Content /></div>
+  </article>
+  {backlinks.length > 0 && (
+    <section class="backlinks">
+      <h2>Linked from</h2>
+      <ul class="note-list">{backlinks.map((n) => <NoteCard note={n} />)}</ul>
+    </section>
+  )}
+</Base>

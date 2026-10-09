@@ -1,0 +1,46 @@
+---
+import '../styles/global.css';
+import { allNotes } from '../lib/garden';
+
+interface Props { title?: string; description?: string }
+const { title, description = 'A digital garden of half-formed ideas, growing in public.' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const notes = await allNotes();
+const slugs = notes.map((n) => n.id);
+const pageTitle = title ? `${title} · Garden` : 'Garden';
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <link rel="icon" href={`${base}/favicon.svg`} type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,700;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+    <title>{pageTitle}</title>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="site-header">
+        <a class="brand" href={`${base}/`}>🌱 Garden</a>
+        <nav class="nav">
+          <a href={`${base}/notes/`}>All notes</a>
+          <button id="random" type="button" data-slugs={JSON.stringify(slugs)} data-base={base}>Surprise me</button>
+        </nav>
+      </header>
+      <main><slot /></main>
+      <footer>Growing slowly, in public. Last built {new Date().toISOString().slice(0, 10)}.</footer>
+    </div>
+    <script>
+      const btn = document.getElementById('random');
+      btn?.addEventListener('click', () => {
+        const slugs = JSON.parse(btn.dataset.slugs || '[]');
+        if (!slugs.length) return;
+        const pick = slugs[Math.floor(Math.random() * slugs.length)];
+        location.href = `${btn.dataset.base}/notes/${pick}/`;
+      });
+    </script>
+  </body>
+</html>

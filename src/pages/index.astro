@@ -1,0 +1,40 @@
+---
+import Base from '../layouts/Base.astro';
+import NoteCard from '../components/NoteCard.astro';
+import Heatmap from '../components/Heatmap.astro';
+import { allNotes, activity, streak, orphans, STATUS } from '../lib/garden';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const notes = await allNotes();
+const act = activity(notes);
+const counts = { seedling: 0, budding: 0, evergreen: 0 };
+notes.forEach((n) => counts[n.data.status]++);
+const lonely = orphans(notes).slice(0, 3);
+---
+<Base>
+  <section class="hero">
+    <h1>A garden of <em>unfinished</em> thoughts.</h1>
+    <p>Not a blog. Notes here are planted rough and tended over time, so expect seedlings. Plant something small today.</p>
+  </section>
+
+  <div class="stats">
+    <div class="card stat"><b>{notes.length}</b><span>notes</span></div>
+    <div class="card stat"><b>{streak(act)}</b><span>day streak</span></div>
+    {(Object.keys(STATUS) as (keyof typeof STATUS)[]).map((k) => (
+      <div class="card stat"><b>{counts[k]}</b><span>{STATUS[k].emoji} {STATUS[k].label.toLowerCase()}s</span></div>
+    ))}
+  </div>
+
+  <div class="card"><Heatmap activity={act} /></div>
+
+  <div class="section-title"><h2>Recently tended</h2><a href={`${base}/notes/`}>See all →</a></div>
+  <ul class="note-list">{notes.slice(0, 6).map((n) => <NoteCard note={n} />)}</ul>
+
+  {lonely.length > 0 && (
+    <>
+      <div class="section-title"><h2>Needs a connection</h2></div>
+      <p class="meta">These notes link to nothing and nothing links to them. Tend one today by adding a <code>[[link]]</code>.</p>
+      <ul class="note-list">{lonely.map((n) => <NoteCard note={n} />)}</ul>
+    </>
+  )}
+</Base>

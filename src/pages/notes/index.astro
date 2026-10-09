@@ -1,0 +1,28 @@
+---
+import Base from '../../layouts/Base.astro';
+import NoteCard from '../../components/NoteCard.astro';
+import { allNotes, STATUS } from '../../lib/garden';
+const notes = await allNotes();
+---
+<Base title="All notes">
+  <section class="hero"><h1>All notes</h1></section>
+  <div class="pills" id="filters">
+    <button type="button" data-filter="all" aria-pressed="true">All</button>
+    {(Object.keys(STATUS) as (keyof typeof STATUS)[]).map((k) => (
+      <button type="button" data-filter={k} aria-pressed="false">{STATUS[k].emoji} {STATUS[k].label}</button>
+    ))}
+  </div>
+  <ul class="note-list" id="list">{notes.map((n) => <NoteCard note={n} />)}</ul>
+  <script>
+    const buttons = document.querySelectorAll<HTMLButtonElement>('#filters button');
+    const items = document.querySelectorAll<HTMLElement>('#list > li');
+    buttons.forEach((b) =>
+      b.addEventListener('click', () => {
+        buttons.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+        items.forEach((li) => {
+          li.hidden = b.dataset.filter !== 'all' && li.dataset.status !== b.dataset.filter;
+        });
+      })
+    );
+  </script>
+</Base>

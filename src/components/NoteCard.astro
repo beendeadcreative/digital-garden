@@ -1,0 +1,21 @@
+---
+import { STATUS, lastTended, type Note } from '../lib/garden';
+interface Props { note: Note }
+const { note } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const s = STATUS[note.data.status];
+const excerpt = (note.body ?? '').replace(/[#>*`_\[\]|]/g, '').replace(/\s+/g, ' ').trim().slice(0, 140);
+---
+<li data-status={note.data.status}>
+  <a class="note-link" href={`${base}/notes/${note.id}/`}>
+    <div class="card">
+      <span class={`badge ${note.data.status}`}>{s.emoji} {s.label}</span>
+      <h3>{note.data.title}</h3>
+      {excerpt && <p>{excerpt}{excerpt.length >= 140 ? '…' : ''}</p>}
+      <div class="meta">
+        tended {lastTended(note).toISOString().slice(0, 10)}
+        {note.data.tags.map((t) => <span class="tag"> {t}</span>)}
+      </div>
+    </div>
+  </a>
+</li>
